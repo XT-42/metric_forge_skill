@@ -1,4 +1,4 @@
-# metric_forge_skill
+# Metric_forge_skill
 
 **指标规范化梳理与指标平台搭建方法论 skill** — 一份可以直接被 Claude（claude.ai / Claude Code / Claude Cowork）加载使用的技能包，把企业指标治理从"一堆散乱报表"锻造成"一套有编号、有规范、可复用的指标体系"。
 
