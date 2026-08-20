@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指标资产盘点台账</title>
+<style>
+  :root{
+    --paper:#F1F3F1;
+    --panel:#FFFFFF;
+    --ink:#14181C;
+    --ink-soft:#4A5259;
+    --ink-faint:#8A9188;
+    --rule:#CBD2CC;
+    --rule-soft:#E2E6E2;
+    --navy:#223A5E;
+    --navy-soft:#3C5A82;
+    --teal:#2F6B62;
+    --teal-bg:#E4EFEC;
+    --ochre:#A6752C;
+    --ochre-bg:#F4E9D8;
+    --new-bg:#EFE9F3;
+    --new-ink:#5C4A73;
+    --serif: ui-serif, Georgia, "Songti SC", "STSong", "Noto Serif SC", serif;
+    --sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); line-height:1.5; padding:32px 24px 80px;
+  }
+  .wrap{max-width:1180px; margin:0 auto;}
+
+  header.masthead{
+    border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:24px;
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px;
+  }
+  header.masthead .title-block h1{
+    font-family:var(--serif); font-size:28px; font-weight:600; margin:0 0 4px;
+    letter-spacing:0.01em;
+  }
+  header.masthead .title-block .sub{
+    font-size:13px; color:var(--ink-soft); font-family:var(--mono);
+  }
+  header.masthead .meta{
+    text-align:right; font-size:12px; color:var(--ink-faint); font-family:var(--mono);
+    line-height:1.7;
+  }
+
+  .tally{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); margin-bottom:28px;
+  }
+  .tally .cell{background:var(--panel); padding:16px 18px;}
+  .tally .cell .n{font-family:var(--serif); font-size:26px; font-weight:600;}
+  .tally .cell .l{font-size:11px; color:var(--ink-soft); margin-top:4px; letter-spacing:0.03em;}
+  .tally .cell.conflict .n{color:var(--ochre);}
+  .tally .cell.normalized .n{color:var(--teal);}
+
+  .controls{
+    display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:18px;
+    padding:14px 16px; background:var(--panel); border:1px solid var(--rule-soft);
+  }
+  .controls input[type=search]{
+    flex:1; min-width:200px; padding:9px 12px; border:1px solid var(--rule);
+    background:var(--paper); font-family:var(--mono); font-size:13px; color:var(--ink);
+  }
+  .controls input[type=search]:focus{outline:2px solid var(--navy-soft); outline-offset:1px;}
+  .chip-group{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--rule); background:var(--panel); color:var(--ink-soft);
+    font-size:12px; padding:6px 12px; cursor:pointer; user-select:none;
+    font-family:var(--sans);
+  }
+  .chip.active{background:var(--navy); border-color:var(--navy); color:#fff;}
+  .btn{
+    border:1px solid var(--ink); background:var(--ink); color:#fff;
+    font-size:12px; padding:9px 16px; cursor:pointer; font-family:var(--sans);
+    white-space:nowrap;
+  }
+  .btn:hover{background:var(--navy);}
+  .btn.secondary{background:var(--panel); color:var(--ink); border-color:var(--rule);}
+  .btn.secondary:hover{border-color:var(--ink);}
+
+  table{width:100%; border-collapse:collapse; background:var(--panel);}
+  thead th{
+    text-align:left; font-size:11px; letter-spacing:0.04em; color:var(--ink-soft);
+    border-bottom:2px solid var(--ink); padding:10px 12px; cursor:pointer; white-space:nowrap;
+    font-weight:600;
+  }
+  thead th:hover{color:var(--navy);}
+  thead th .arrow{opacity:0.35; font-size:10px; margin-left:3px;}
+  tbody tr.row{border-bottom:1px solid var(--rule-soft); cursor:pointer;}
+  tbody tr.row:hover{background:var(--paper);}
+  tbody td{padding:11px 12px; font-size:13px; vertical-align:top;}
+  td.code{font-family:var(--mono); font-size:11.5px; color:var(--ink-faint); white-space:nowrap;}
+  td.name .cn{font-weight:600;}
+  td.name .en{display:block; font-family:var(--mono); font-size:11px; color:var(--ink-faint); margin-top:2px;}
+  td.domain{color:var(--ink-soft); font-size:12.5px;}
+
+  .stamp{
+    display:inline-block; font-size:11px; font-family:var(--sans); font-weight:600;
+    padding:3px 9px; border:1px solid transparent; letter-spacing:0.02em;
+    transform:rotate(-1deg);
+  }
+  .stamp.normalized{background:var(--teal-bg); color:var(--teal); border-color:var(--teal);}
+  .stamp.conflict{background:var(--ochre-bg); color:var(--ochre); border-color:var(--ochre);}
+  .stamp.new{background:var(--new-bg); color:var(--new-ink); border-color:var(--new-ink);}
+
+  tr.detail{display:none;}
+  tr.detail.open{display:table-row;}
+  tr.detail td{background:var(--paper); padding:16px 20px; border-bottom:1px solid var(--rule-soft);}
+  .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .detail-block h4{
+    margin:0 0 6px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--ink-soft); font-weight:600;
+  }
+  .detail-block p, .detail-block li{font-size:13px; color:var(--ink); margin:0 0 4px;}
+  .detail-block ol{margin:0; padding-left:18px;}
+  .conflict-note{
+    grid-column:1/-1; background:var(--ochre-bg); border-left:3px solid var(--ochre);
+    padding:10px 14px; font-size:13px; color:#5c4319;
+  }
+
+  .empty{padding:40px; text-align:center; color:var(--ink-faint); font-family:var(--serif); font-size:15px;}
+
+  footer.note{
+    margin-top:28px; font-size:11.5px; color:var(--ink-faint); font-family:var(--mono);
+    border-top:1px solid var(--rule-soft); padding-top:14px;
+  }
+
+  @media (max-width:720px){
+    .tally{grid-template-columns:repeat(2,1fr);}
+    .detail-grid{grid-template-columns:1fr;}
+    thead{display:none;}
+    table, tbody, tr, td{display:block; width:100%;}
+    tbody tr.row{padding:10px 12px;}
+    tbody td{padding:2px 0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="title-block">
+      <h1>指标资产盘点台账</h1>
+      <div class="sub">METRIC AUDIT &amp; STANDARDIZATION LEDGER</div>
+    </div>
+    <div class="meta">
+      公司 / 业务线：<span id="metaCompany">——</span><br>
+      生成日期：<span id="metaDate">——</span><br>
+      数据来源：<span id="metaSource">——</span>
+    </div>
+  </header>
+
+  <div class="tally" id="tally"></div>
+
+  <div class="controls">
+    <input type="search" id="searchInput" placeholder="搜索指标名称 / 英文名 / 编号…">
+    <div class="chip-group" id="statusChips"></div>
+    <div class="chip-group" id="domainChips"></div>
+    <button class="btn secondary" id="exportBtn">导出当前视图为 CSV</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="id">编号<span class="arrow"></span></th>
+        <th data-sort="name_cn">指标名称<span class="arrow"></span></th>
+        <th data-sort="type">类型<span class="arrow"></span></th>
+        <th data-sort="domain">数据域<span class="arrow"></span></th>
+        <th data-sort="level_asset">资产等级<span class="arrow"></span></th>
+        <th data-sort="status">状态<span class="arrow"></span></th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="emptyState" style="display:none;">没有匹配当前筛选条件的指标</div>
+
+  <footer class="note">
+    状态说明：<b style="color:var(--teal)">已规范化</b> = 命名/口径/分级已确认无冲突；
+    <b style="color:var(--ochre)">待确认冲突</b> = 检测到同名不同义或同义不同词，需人工判定；
+    <b style="color:var(--new-ink)">新增建议</b> = 系统建议补充但企业尚未有对应指标。
+    点击任意行查看完整定义与业务规则。本文件为静态自包含 HTML，数据已内嵌，无需联网即可打开使用。
+  </footer>
+
+</div>
+
+<script>
+/* ============================================================
+   数据区：把下面 METRICS 数组替换为企业实际盘点数据即可。
+   每条记录字段含义见 references/07-audit-and-standardize-workflow.md
+   中的"共享指标数据结构"一节。下面这份是演示数据。
+   ============================================================ */
+const META = {
+  company: "示例科技有限公司",
+  date: "2026-08-20",
+  source: "历史报表 12 份 + 分析师访谈 3 场，原始条目 86 条，去重规范化后 41 条"
+};
+
+const METRICS = [
+  {id:"TRXN_G_00010000", name_cn:"支付成功订单数", name_en:"paid_order_cnt", type:"原子指标",
+   domain:"交易域", level_asset:"A1", level_security:"C2", status:"normalized",
+   conflict_note:"", analysis:["衡量核心交易转化结果规模","作为公司级经营看板核心指标"],
+   rules:["仅统计支付状态为成功且未在7天内发生全额退款的订单","渠道订单以折扣前金额对应的订单同样计入，不做金额加权"],
+   dims:"城市、产品线、渠道"},
+
+  {id:"TRXN_G_00010001", name_cn:"支付成功率", name_en:"pay_success_rate", type:"复合指标",
+   domain:"交易域", level_asset:"A1", level_security:"C2", status:"conflict",
+   conflict_note:"运营侧口径分母为「下单数」，财务侧口径分母为「提交支付请求数」，两个版本在同一报表中都被称为「支付成功率」，需业务确认统一口径。",
+   analysis:["衡量支付链路转化效率","定位支付环节流失点"],
+   rules:["候选口径A：支付成功订单数 / 下单数","候选口径B：支付成功订单数 / 支付请求发起数"],
+   dims:"城市、支付渠道"},
+
+  {id:"USER_G_00020000", name_cn:"月活跃用户数", name_en:"mau", type:"原子指标",
+   domain:"用户域", level_asset:"A1", level_security:"C2", status:"normalized",
+   conflict_note:"", analysis:["衡量用户规模基本盘","用于同比/环比大盘趋势判断"],
+   rules:["自然月内至少完成一次有效登录或访问行为的去重用户数","去重以用户ID为准，未登录的游客访问不计入"],
+   dims:"平台端（APP/PC/小程序）"},
+
+  {id:"USER_G_00020001", name_cn:"活跃用户数", name_en:"active_user_cnt", type:"原子指标",
+   domain:"用户域", level_asset:"A3", level_security:"C2", status:"conflict",
+   conflict_note:"与「月活跃用户数」为同一概念的两个不同名称，在两个不同部门的报表中并行使用，建议合并为一个指标并保留曾用名。",
+   analysis:["与月活跃用户数含义重复，待合并"], rules:["定义与 USER_G_00020000 基本一致，统计口径未见差异"],
+   dims:"—"},
+
+  {id:"USER_G_00020002", name_cn:"新客留存率(次月)", name_en:"new_user_m1_retention", type:"派生指标",
+   domain:"用户域", level_asset:"A2", level_security:"C2", status:"normalized",
+   conflict_note:"", analysis:["评估新客质量与产品早期体验","作为增长团队核心考核指标"],
+   rules:["分母为当月新注册用户数","分子为该批用户在次自然月内有过至少一次活跃行为的人数"],
+   dims:"获客渠道、城市"},
+
+  {id:"CNT_G_00030000", name_cn:"内容发布量", name_en:"content_publish_cnt", type:"原子指标",
+   domain:"内容域", level_asset:"A2", level_security:"C1", status:"normalized",
+   conflict_note:"", analysis:["衡量内容生态供给规模"],
+   rules:["统计周期内新发布且通过审核的内容条数","同一内容多次编辑不重复计数"], dims:"内容类型、创作者层级"},
+
+  {id:"CNT_G_00030001", name_cn:"内容审核通过率", name_en:"content_audit_pass_rate", type:"复合指标",
+   domain:"内容域", level_asset:"A3", level_security:"C1", status:"new",
+   conflict_note:"", analysis:["建议新增：目前内容质量仅能看到「发布量」，缺少质量维度指标，无法评估审核前置策略效果"],
+   rules:["建议口径：审核通过内容数 / 提交审核内容数","建议按审核规则版本拆分口径，规则调整后需要有对比窗口"],
+   dims:"内容类型、审核规则版本"},
+
+  {id:"OPS_G_00040000", name_cn:"客服首次响应时长", name_en:"cs_first_response_time", type:"原子指标",
+   domain:"服务域", level_asset:"A2", level_security:"C2", status:"normalized",
+   conflict_note:"", analysis:["衡量客服团队响应效率","SLA达成情况的基础指标"],
+   rules:["从用户发起会话到客服首次回复之间的时间差，单位分钟","机器人自动回复不计入"], dims:"客服团队、渠道"}
+];
+</script>
+
+<script>
+/* ============================================================
+   渲染与交互逻辑：通用，不需要针对不同企业修改
+   ============================================================ */
+(function(){
+  document.getElementById('metaCompany').textContent = META.company;
+  document.getElementById('metaDate').textContent = META.date;
+  document.getElementById('metaSource').textContent = META.source;
+
+  const STATUS_LABEL = {normalized:'已规范化', conflict:'待确认冲突', new:'新增建议'};
+  let state = { search:'', status:'all', domains:new Set(), sortKey:'id', sortDir:1 };
+
+  function renderTally(){
+    const total = METRICS.length;
+    const normalized = METRICS.filter(m=>m.status==='normalized').length;
+    const conflict = METRICS.filter(m=>m.status==='conflict').length;
+    const domains = new Set(METRICS.map(m=>m.domain)).size;
+    document.getElementById('tally').innerHTML = `
+      <div class="cell"><div class="n">${total}</div><div class="l">盘点指标总数</div></div>
+      <div class="cell normalized"><div class="n">${normalized}</div><div class="l">已规范化</div></div>
+      <div class="cell conflict"><div class="n">${conflict}</div><div class="l">待确认冲突</div></div>
+      <div class="cell"><div class="n">${domains}</div><div class="l">覆盖数据域</div></div>
+    `;
+  }
+
+  function renderChips(){
+    const statusWrap = document.getElementById('statusChips');
+    const statuses = [['all','全部'],['normalized','已规范化'],['conflict','待确认冲突'],['new','新增建议']];
+    statusWrap.innerHTML = statuses.map(([k,l])=>
+      `<div class="chip ${state.status===k?'active':''}" data-status="${k}">${l}</div>`).join('');
+    statusWrap.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      state.status = c.dataset.status; renderChips(); renderTable();
+    }));
+
+    const domainWrap = document.getElementById('domainChips');
+    const domains = [...new Set(METRICS.map(m=>m.domain))];
+    domainWrap.innerHTML = domains.map(d=>
+      `<div class="chip ${state.domains.has(d)?'active':''}" data-domain="${d}">${d}</div>`).join('');
+    domainWrap.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+      const d = c.dataset.domain;
+      state.domains.has(d) ? state.domains.delete(d) : state.domains.add(d);
+      renderChips(); renderTable();
+    }));
+  }
+
+  function getFiltered(){
+    return METRICS.filter(m=>{
+      if(state.status!=='all' && m.status!==state.status) return false;
+      if(state.domains.size>0 && !state.domains.has(m.domain)) return false;
+      if(state.search){
+        const s = state.search.toLowerCase();
+        const hay = (m.id+m.name_cn+m.name_en).toLowerCase();
+        if(!hay.includes(s)) return false;
+      }
+      return true;
+    }).sort((a,b)=>{
+      const va = (a[state.sortKey]||'').toString();
+      const vb = (b[state.sortKey]||'').toString();
+      return va.localeCompare(vb) * state.sortDir;
+    });
+  }
+
+  function renderTable(){
+    const rows = getFiltered();
+    const tbody = document.getElementById('tbody');
+    document.getElementById('emptyState').style.display = rows.length?'none':'block';
+    tbody.innerHTML = rows.map((m,i)=>`
+      <tr class="row" data-idx="${i}">
+        <td class="code">${m.id}</td>
+        <td class="name"><span class="cn">${m.name_cn}</span><span class="en">${m.name_en}</span></td>
+        <td>${m.type}</td>
+        <td class="domain">${m.domain}</td>
+        <td class="code">${m.level_asset} / ${m.level_security}</td>
+        <td><span class="stamp ${m.status}">${STATUS_LABEL[m.status]}</span></td>
+      </tr>
+      <tr class="detail" id="detail-${i}">
+        <td colspan="6">
+          <div class="detail-grid">
+            <div class="detail-block">
+              <h4>分析意义</h4>
+              <ol>${m.analysis.map(a=>`<li>${a}</li>`).join('')}</ol>
+            </div>
+            <div class="detail-block">
+              <h4>业务场景简述</h4>
+              <ol>${m.rules.map(r=>`<li>${r}</li>`).join('')}</ol>
+            </div>
+            ${m.conflict_note?`<div class="conflict-note"><b>冲突说明：</b>${m.conflict_note}</div>`:''}
+            <div class="detail-block"><h4>可用维度</h4><p>${m.dims||'—'}</p></div>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    tbody.querySelectorAll('tr.row').forEach(tr=>{
+      tr.addEventListener('click',()=>{
+        document.getElementById('detail-'+tr.dataset.idx).classList.toggle('open');
+      });
+    });
+  }
+
+  document.querySelectorAll('thead th[data-sort]').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const key = th.dataset.sort;
+      if(state.sortKey===key){ state.sortDir *= -1; } else { state.sortKey=key; state.sortDir=1; }
+      document.querySelectorAll('thead .arrow').forEach(a=>a.textContent='');
+      th.querySelector('.arrow').textContent = state.sortDir===1?'▲':'▼';
+      renderTable();
+    });
+  });
+
+  document.getElementById('searchInput').addEventListener('input', (e)=>{
+    state.search = e.target.value.trim(); renderTable();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const rows = getFiltered();
+    const header = ['编号','指标名称','英文名','类型','数据域','资产等级','安全等级','状态','冲突说明'];
+    const lines = [header.join(',')].concat(rows.map(m=>[
+      m.id, m.name_cn, m.name_en, m.type, m.domain, m.level_asset, m.level_security,
+      STATUS_LABEL[m.status], (m.conflict_note||'').replace(/,/g,'，')
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')));
+    const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '指标盘点台账导出.csv';
+    a.click();
+  });
+
+  renderTally(); renderChips(); renderTable();
+})();
+</script>
+</body>
+</html>
