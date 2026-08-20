@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指标体系框架图</title>
+<style>
+  :root{
+    --paper:#F1F3F1; --panel:#FFFFFF; --ink:#14181C; --ink-soft:#4A5259; --ink-faint:#8A9188;
+    --rule:#C3CBC5; --rule-soft:#E2E6E2;
+    --navy:#223A5E; --navy-soft:#3C5A82;
+    --teal:#2F6B62; --teal-bg:#E4EFEC;
+    --ochre:#A6752C; --ochre-bg:#F4E9D8;
+    --serif: ui-serif, Georgia, "Songti SC", "STSong", "Noto Serif SC", serif;
+    --sans: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Courier New", monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans); padding:32px 20px 90px;}
+  .wrap{max-width:1240px; margin:0 auto;}
+
+  header.masthead{
+    border-bottom:2px solid var(--ink); padding-bottom:16px; margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:10px;
+  }
+  header.masthead h1{font-family:var(--serif); font-size:26px; font-weight:600; margin:0 0 4px;}
+  header.masthead .sub{font-size:12.5px; color:var(--ink-soft); font-family:var(--mono);}
+  header.masthead .actions{display:flex; gap:8px;}
+  .btn{border:1px solid var(--ink); background:var(--ink); color:#fff; font-size:12px; padding:8px 16px; cursor:pointer;}
+  .btn:hover{background:var(--navy);}
+  .btn.secondary{background:var(--panel); color:var(--ink); border-color:var(--rule);}
+
+  .legend{
+    display:flex; gap:18px; flex-wrap:wrap; padding:12px 16px; background:var(--panel);
+    border:1px solid var(--rule-soft); margin:18px 0 26px; font-size:12px; color:var(--ink-soft);
+  }
+  .legend .item{display:flex; align-items:center; gap:7px;}
+  .legend .swatch{width:14px; height:14px; border-radius:2px; display:inline-block;}
+
+  .diagram-scroll{overflow-x:auto; padding:20px 10px 40px; background:var(--panel); border:1px solid var(--rule-soft);}
+
+  /* ---- pure-CSS org chart ---- */
+  .tree, .tree ul, .tree li{list-style:none; margin:0; padding:0; position:relative;}
+  .tree{text-align:center; display:inline-flex; min-width:100%; justify-content:center;}
+  .tree ul{padding-top:28px; position:relative; display:flex;}
+  .tree li{
+    float:left; text-align:center; position:relative; padding:28px 10px 0 10px;
+  }
+  .tree li::before, .tree li::after{
+    content:''; position:absolute; top:0; right:50%;
+    border-top:2px solid var(--rule); width:50%; height:28px;
+  }
+  .tree li::after{ right:auto; left:50%; border-left:2px solid var(--rule); }
+  .tree li:only-child::after, .tree li:only-child::before{ display:none; }
+  .tree li:only-child{ padding-top:0; }
+  .tree li:first-child::before, .tree li:last-child::after{ border:0 none; }
+  .tree li:last-child::before{ border-right:2px solid var(--rule); border-radius:0 6px 0 0; }
+  .tree li:first-child::after{ border-radius:6px 0 0 0; }
+  .tree > li{ padding-top:0; }
+  .tree > li::before, .tree > li::after{ display:none; }
+  .tree ul ul::before{
+    content:''; position:absolute; top:0; left:50%;
+    border-left:2px solid var(--rule); width:0; height:28px;
+  }
+
+  .node{
+    display:inline-block; min-width:150px; max-width:210px; padding:12px 14px;
+    background:var(--panel); border:1.5px solid var(--rule); text-align:left;
+    font-size:12.5px;
+  }
+  .node .label{font-family:var(--serif); font-weight:600; font-size:14px; margin-bottom:3px; line-height:1.3;}
+  .node .meta{font-family:var(--mono); font-size:10.5px; color:var(--ink-faint);}
+  .node .badge{
+    display:inline-block; font-size:10px; padding:2px 7px; margin-top:6px; font-weight:600;
+  }
+
+  .node.level-north_star{background:var(--navy); border-color:var(--navy); min-width:200px;}
+  .node.level-north_star .label{color:#fff; font-size:16px;}
+  .node.level-north_star .meta{color:#C9D5E4;}
+
+  .node.level-strategy{border-color:var(--navy-soft); border-width:2px;}
+  .node.level-strategy .label{color:var(--navy);}
+
+  .node.level-metric.status-existing{border-color:var(--teal);}
+  .node.level-metric.status-existing .badge{background:var(--teal-bg); color:var(--teal);}
+  .node.level-metric.status-gap{border-style:dashed; border-color:var(--ochre); background:var(--ochre-bg);}
+  .node.level-metric.status-gap .badge{background:#fff; color:var(--ochre);}
+  .node.level-metric.status-gap .label{color:#5c4319;}
+
+  .gap-panel{margin-top:30px; padding:18px 20px; background:var(--panel); border:1px solid var(--rule-soft);}
+  .gap-panel h3{font-family:var(--serif); font-size:16px; margin:0 0 10px;}
+  .gap-panel .hint{font-size:12px; color:var(--ink-soft); margin-bottom:12px;}
+  .gap-row{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:9px 12px; border-bottom:1px solid var(--rule-soft); font-size:13px;
+  }
+  .gap-row:last-child{border-bottom:none;}
+  .gap-row .path{color:var(--ink-faint); font-size:11.5px; font-family:var(--mono);}
+
+  footer.note{margin-top:24px; font-size:11.5px; color:var(--ink-faint); font-family:var(--mono); border-top:1px solid var(--rule-soft); padding-top:14px;}
+
+  @media print{
+    .btn, .legend, header .actions{display:none !important;}
+    body{padding:0; background:#fff;}
+    .diagram-scroll{border:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1 id="titleEl">指标体系框架图</h1>
+      <div class="sub" id="subtitleEl">ANALYTICAL METRIC FRAMEWORK</div>
+    </div>
+    <div class="actions">
+      <button class="btn secondary" onclick="window.print()">打印 / 导出 PDF</button>
+    </div>
+  </header>
+
+  <div class="legend">
+    <div class="item"><span class="swatch" style="background:var(--navy);"></span>北极星 / 目标层</div>
+    <div class="item"><span class="swatch" style="background:#fff; border:2px solid var(--navy-soft);"></span>策略 / 拆解层</div>
+    <div class="item"><span class="swatch" style="background:#fff; border:2px solid var(--teal);"></span>已有指标支撑</div>
+    <div class="item"><span class="swatch" style="background:var(--ochre-bg); border:2px dashed var(--ochre);"></span>缺口（建议新增）</div>
+  </div>
+
+  <div class="diagram-scroll">
+    <div class="tree" id="treeRoot"></div>
+  </div>
+
+  <div class="gap-panel">
+    <h3>缺口清单</h3>
+    <div class="hint">以下节点在业务逻辑上应该有对应指标支撑，但企业现有指标资产里还没有覆盖，建议按 metric-forge 的模式二流程新增。</div>
+    <div id="gapList"></div>
+  </div>
+
+  <footer class="note">本文件为静态自包含 HTML，框架数据已内嵌，无需联网即可打开、打印或分享。</footer>
+</div>
+
+<script>
+/* ============================================================
+   数据区：把 FRAMEWORK 替换为具体业务域的框架结构即可。
+   结构说明见 references/09-analytical-framework-library.md
+   ============================================================ */
+const FRAMEWORK = {
+  title: "交易业务域 · 分析指标体系框架（示例）",
+  subtitle: "NORTH-STAR METRIC TREE — 示例业务域，请替换为真实数据",
+  root: {
+    name: "月度支付成功GMV",
+    level: "north_star",
+    meta: "北极星指标",
+    children: [
+      {
+        name: "流量与曝光", level: "strategy", meta: "策略层：获取更多有效流量",
+        children: [
+          {name:"月活跃用户数", level:"metric", status:"existing", meta:"USER_G_00020000"},
+          {name:"渠道曝光量", level:"metric", status:"gap", meta:"建议新增"}
+        ]
+      },
+      {
+        name: "转化效率", level: "strategy", meta: "策略层：提升下单到支付的转化",
+        children: [
+          {name:"支付成功订单数", level:"metric", status:"existing", meta:"TRXN_G_00010000"},
+          {name:"支付成功率", level:"metric", status:"existing", meta:"TRXN_G_00010001（口径待统一）"},
+          {name:"支付环节流失率", level:"metric", status:"gap", meta:"建议新增"}
+        ]
+      },
+      {
+        name: "客单价与复购", level: "strategy", meta: "策略层：提升单用户价值",
+        children: [
+          {name:"客单价", level:"metric", status:"existing", meta:"TRXN_G_00010002"},
+          {name:"新客留存率(次月)", level:"metric", status:"existing", meta:"USER_G_00020002"},
+          {name:"复购周期", level:"metric", status:"gap", meta:"建议新增"}
+        ]
+      }
+    ]
+  }
+};
+</script>
+
+<script>
+(function(){
+  document.getElementById('titleEl').textContent = FRAMEWORK.title || '指标体系框架图';
+  document.getElementById('subtitleEl').textContent = FRAMEWORK.subtitle || '';
+
+  function renderNode(node){
+    const statusClass = node.status ? `status-${node.status}` : '';
+    const badge = node.status==='existing' ? '<span class="badge">已有指标</span>'
+                : node.status==='gap' ? '<span class="badge">缺口</span>' : '';
+    return `<div class="node level-${node.level} ${statusClass}">
+      <div class="label">${node.name}</div>
+      ${node.meta?`<div class="meta">${node.meta}</div>`:''}
+      ${badge}
+    </div>`;
+  }
+
+  function renderList(nodes){
+    if(!nodes || !nodes.length) return '';
+    return `<ul>${nodes.map(n=>`<li>${renderNode(n)}${renderList(n.children)}</li>`).join('')}</ul>`;
+  }
+
+  document.getElementById('treeRoot').innerHTML =
+    `<ul><li>${renderNode(FRAMEWORK.root)}${renderList(FRAMEWORK.root.children)}</li></ul>`;
+
+  // 缺口清单：遍历树收集所有 status=gap 的节点，附带路径
+  const gaps = [];
+  function walk(node, path){
+    const nextPath = path.concat(node.name);
+    if(node.status==='gap') gaps.push({name:node.name, path:nextPath.slice(0,-1).join(' › ')});
+    (node.children||[]).forEach(c=>walk(c, nextPath));
+  }
+  walk(FRAMEWORK.root, []);
+
+  const gapList = document.getElementById('gapList');
+  gapList.innerHTML = gaps.length
+    ? gaps.map(g=>`<div class="gap-row"><span>${g.name}</span><span class="path">${g.path}</span></div>`).join('')
+    : '<div class="gap-row">当前框架未标记缺口节点</div>';
+})();
+</script>
+</body>
+</html>
